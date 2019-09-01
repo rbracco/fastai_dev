@@ -1,4 +1,4 @@
-import io,operator,sys,os,re,os,mimetypes,csv,itertools,json,shutil,glob,pickle,tarfile,collections
+import io,operator,sys,os,re,os,mimetypes,csv,itertools,json,shutil,glob,pickle,collections
 import hashlib,itertools,types,random,inspect,functools,random,time,math,bz2,types,typing,numbers,string
 import multiprocessing,threading,urllib,ipykernel
 
@@ -18,6 +18,7 @@ from textwrap import TextWrapper
 from operator import itemgetter,attrgetter,methodcaller
 from notebook import notebookapp
 from urllib.request import urlopen
+from decompress import decompress
 
 # External modules
 import torch,matplotlib.pyplot as plt,numpy as np,pandas as pd,scipy

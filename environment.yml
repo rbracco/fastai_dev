@@ -19,3 +19,4 @@ dependencies:
 - pip:
   - typeguard
   - jupyter_nbextensions_configurator
+  - decompress>=0.0.5
