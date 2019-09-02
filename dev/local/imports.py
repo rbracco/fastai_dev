@@ -18,7 +18,7 @@ from textwrap import TextWrapper
 from operator import itemgetter,attrgetter,methodcaller
 from notebook import notebookapp
 from urllib.request import urlopen
-from decompress import decompress
+from pyunpack import Archive
 
 # External modules
 import torch,matplotlib.pyplot as plt,numpy as np,pandas as pd,scipy
