@@ -14,7 +14,7 @@ from local.callback.rnn import *
 from local.callback.all import *
 from local.script import *
 
-path = untar_data(URLs.WIKITEXT_TINY)
+path = decompress_data(URLs.WIKITEXT_TINY)
 
 def istitle(line):
     return len(re.findall(r'^ = [^=]* = $', line)) != 0

@@ -166,9 +166,9 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">mnist</span> <span class="o">=</span> <span class="n">MNIST</span><span class="p">()</span><span class="o">.</span><span class="n">datasource</span><span class="p">(</span><span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">mnist</span> <span class="o">=</span> <span class="n">MNIST</span><span class="p">()</span><span class="o">.</span><span class="n">datasource</span><span class="p">(</span><span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">))</span>
 <span class="c1">#TODO: access vocab</span>
-<span class="c1"># mnist = MNIST().datasource(untar_data(URLs.MNIST_TINY), type_tfms=[None, Categorize([&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;])])</span>
+<span class="c1"># mnist = MNIST().datasource(decompress_data(URLs.MNIST_TINY), type_tfms=[None, Categorize([&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;])])</span>
 <span class="c1">#test_eq(mnist.vocab, [&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;])</span>
 </pre></div>
 
@@ -258,7 +258,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dbunch</span> <span class="o">=</span> <span class="n">mnist</span><span class="o">.</span><span class="n">databunch</span><span class="p">(</span><span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">))</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dbunch</span> <span class="o">=</span> <span class="n">mnist</span><span class="o">.</span><span class="n">databunch</span><span class="p">(</span><span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">MNIST_TINY</span><span class="p">))</span>
 </pre></div>
 
     </div>
@@ -308,7 +308,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">PETS</span><span class="p">)</span><span class="o">/</span><span class="s2">&quot;images&quot;</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">PETS</span><span class="p">)</span><span class="o">/</span><span class="s2">&quot;images&quot;</span>
 </pre></div>
 
     </div>
@@ -388,7 +388,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dbunch</span> <span class="o">=</span> <span class="n">pets</span><span class="o">.</span><span class="n">databunch</span><span class="p">(</span><span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">PETS</span><span class="p">)</span><span class="o">/</span><span class="s2">&quot;images&quot;</span><span class="p">,</span> <span class="n">ds_tfms</span><span class="o">=</span><span class="n">Resize</span><span class="p">(</span><span class="mi">128</span><span class="p">),</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dbunch</span> <span class="o">=</span> <span class="n">pets</span><span class="o">.</span><span class="n">databunch</span><span class="p">(</span><span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">PETS</span><span class="p">)</span><span class="o">/</span><span class="s2">&quot;images&quot;</span><span class="p">,</span> <span class="n">ds_tfms</span><span class="o">=</span><span class="n">Resize</span><span class="p">(</span><span class="mi">128</span><span class="p">),</span>
                         <span class="n">dl_tfms</span><span class="o">=</span><span class="n">aug_transforms</span><span class="p">())</span>
 </pre></div>
 
@@ -455,7 +455,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">planet_source</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">PLANET_TINY</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">planet_source</span> <span class="o">=</span> <span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">PLANET_TINY</span><span class="p">)</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">planet_source</span><span class="o">/</span><span class="s2">&quot;labels.csv&quot;</span><span class="p">)</span>
 </pre></div>
 
@@ -675,7 +675,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">camvid</span> <span class="o">=</span> <span class="n">DataBlock</span><span class="p">(</span><span class="n">ts</span><span class="o">=</span><span class="p">(</span><span class="n">PILImage</span><span class="p">,</span> <span class="n">PILMask</span><span class="p">),</span>
                    <span class="n">get_items</span><span class="o">=</span><span class="n">get_image_files</span><span class="p">,</span>
                    <span class="n">splitter</span><span class="o">=</span><span class="n">RandomSplitter</span><span class="p">(),</span>
-                   <span class="n">get_y</span><span class="o">=</span><span class="k">lambda</span> <span class="n">o</span><span class="p">:</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">CAMVID_TINY</span><span class="p">)</span><span class="o">/</span><span class="s1">&#39;labels&#39;</span><span class="o">/</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{o.stem}</span><span class="s1">_P</span><span class="si">{o.suffix}</span><span class="s1">&#39;</span><span class="p">)</span>
+                   <span class="n">get_y</span><span class="o">=</span><span class="k">lambda</span> <span class="n">o</span><span class="p">:</span> <span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">CAMVID_TINY</span><span class="p">)</span><span class="o">/</span><span class="s1">&#39;labels&#39;</span><span class="o">/</span><span class="n">f</span><span class="s1">&#39;</span><span class="si">{o.stem}</span><span class="s1">_P</span><span class="si">{o.suffix}</span><span class="s1">&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -688,7 +688,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dbunch</span> <span class="o">=</span> <span class="n">camvid</span><span class="o">.</span><span class="n">databunch</span><span class="p">(</span><span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">CAMVID_TINY</span><span class="p">)</span><span class="o">/</span><span class="s2">&quot;images&quot;</span><span class="p">,</span> <span class="n">dl_tfms</span><span class="o">=</span><span class="n">aug_transforms</span><span class="p">())</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">dbunch</span> <span class="o">=</span> <span class="n">camvid</span><span class="o">.</span><span class="n">databunch</span><span class="p">(</span><span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">CAMVID_TINY</span><span class="p">)</span><span class="o">/</span><span class="s2">&quot;images&quot;</span><span class="p">,</span> <span class="n">dl_tfms</span><span class="o">=</span><span class="n">aug_transforms</span><span class="p">())</span>
 </pre></div>
 
     </div>
@@ -738,7 +738,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">biwi_source</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">BIWI_SAMPLE</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">biwi_source</span> <span class="o">=</span> <span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">BIWI_SAMPLE</span><span class="p">)</span>
 <span class="n">fn2ctr</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">biwi_source</span><span class="o">/</span><span class="s1">&#39;centers.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">))</span>
 
 <span class="n">biwi</span> <span class="o">=</span> <span class="n">DataBlock</span><span class="p">(</span><span class="n">ts</span><span class="o">=</span><span class="p">(</span><span class="n">PILImage</span><span class="p">,</span> <span class="n">TensorPoint</span><span class="p">),</span>
@@ -807,7 +807,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">coco_source</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">COCO_TINY</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">coco_source</span> <span class="o">=</span> <span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">COCO_TINY</span><span class="p">)</span>
 <span class="n">images</span><span class="p">,</span> <span class="n">lbl_bbox</span> <span class="o">=</span> <span class="n">get_annotations</span><span class="p">(</span><span class="n">coco_source</span><span class="o">/</span><span class="s1">&#39;train.json&#39;</span><span class="p">)</span>
 <span class="n">img2bbox</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">lbl_bbox</span><span class="p">))</span>
 
@@ -890,7 +890,7 @@ summary: "High level API to quickly get your data in a [`DataBunch`](/data.core.
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">adult_source</span> <span class="o">=</span> <span class="n">untar_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">ADULT_SAMPLE</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">adult_source</span> <span class="o">=</span> <span class="n">decompress_data</span><span class="p">(</span><span class="n">URLs</span><span class="o">.</span><span class="n">ADULT_SAMPLE</span><span class="p">)</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">adult_source</span><span class="o">/</span><span class="s1">&#39;adult.csv&#39;</span><span class="p">)</span>
 </pre></div>
 

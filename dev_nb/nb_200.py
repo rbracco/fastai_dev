@@ -4,7 +4,7 @@
         #################################################
         # file to edit: dev_nb/200_datablock_config.ipynb
 
-from fastai.datasets import URLs, untar_data
+from fastai.datasets import URLs, decompress_data
 from pathlib import Path
 import pandas as pd, numpy as np, torch, re, PIL, os, mimetypes, csv, itertools
 import matplotlib.pyplot as plt
