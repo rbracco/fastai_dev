@@ -18,6 +18,7 @@ dependencies:
 - scikit-learn
 - scipy
 - spacy
+- torchaudio
 - pip:
   - typeguard
   - jupyter_nbextensions_configurator
