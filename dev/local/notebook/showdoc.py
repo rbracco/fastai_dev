@@ -5,7 +5,7 @@ __all__ = ['is_enum', 'add_pytorch_index', 'is_fastai_module', 'FASTAI_DOCS', 'd
            'format_param', 'show_doc', 'md2html', 'doc']
 
 #Cell
-from ..imports import *
+from ..core.imports import *
 from .core import *
 from .export import *
 import inspect,enum,nbconvert
@@ -84,15 +84,24 @@ def add_doc_links(text):
     return _re_backticks.sub(_replace_link, text)
 
 #Cell
-def _is_type_dispatch(x): return x.__class__.__name__ == "TypeDispatch"
-def _unwrapped_type_dispatch_func(x): return next(iter(x.funcs.values())) if _is_type_dispatch(x) else x
+def _is_type_dispatch(x): return type(x).__name__ == "TypeDispatch"
+def _unwrapped_type_dispatch_func(x): return x.first() if _is_type_dispatch(x) else x
+
+def _is_property(x): return type(x)==property
+def _has_property_getter(x): return _is_property(x) and hasattr(x, 'fget') and hasattr(x.fget, 'func')
+def _property_getter(x): return x.fget.func if _has_property_getter(x) else x
+
+def _unwrapped_func(x):
+    x = _unwrapped_type_dispatch_func(x)
+    x = _property_getter(x)
+    return x
 
 #Cell
 SOURCE_URL = "https://github.com/fastai/fastai_dev/tree/master/dev/"
 
 def get_source_link(func):
     "Return link to `func` in source code"
-    func = _unwrapped_type_dispatch_func(func)
+    func = _unwrapped_func(func)
     try: line = inspect.getsourcelines(func)[1]
     except Exception: return ''
     module = inspect.getmodule(func).__name__.replace('.', '/') + '.py'
@@ -215,9 +224,9 @@ def show_doc(elt, doc_string=True, name=None, title_level=None, disp=True, defau
     if inspect.isclass(elt):
         if is_enum(elt.__class__):   name,args = _format_enum_doc(elt, qname)
         else:                        name,args = _format_cls_doc (elt, qname)
-    elif isinstance(elt, Callable):  name,args = _format_func_doc(elt, qname)
+    elif callable(elt):  name,args = _format_func_doc(elt, qname)
     else:                            name,args = f"<code>{qname}</code>", ''
-    link = get_nb_source_link(elt) #TODO: use get_source_link when it works
+    link = get_source_link(elt) #TODO: use get_source_link when it works
     source_link = f'<a href="{link}" class="source_link" style="float:right">[source]</a>'
     title_level = title_level or (default_cls_level if inspect.isclass(elt) else 4)
     doc =  f'<h{title_level} id="{qname}" class="doc_header">{name}{source_link}</h{title_level}>'

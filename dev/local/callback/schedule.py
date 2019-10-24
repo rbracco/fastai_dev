@@ -4,13 +4,8 @@ __all__ = ['annealer', 'SchedLin', 'SchedCos', 'SchedNo', 'SchedExp', 'SchedPoly
            'ParamScheduler', 'LRFinder']
 
 #Cell
-from ..torch_basics import *
 from ..test import *
-from ..layers import *
-from ..data.all import *
-from ..notebook.showdoc import show_doc
-from ..optimizer import *
-from ..learner import *
+from ..basics import *
 
 #Cell
 def annealer(f):
@@ -57,9 +52,9 @@ def combine_scheds(pcts, scheds):
 #Cell
 def combined_cos(pct, start, middle, end):
     "Return a combined scheduler with cosine annealing from `start` to `middle` then `middle` to `end`"
-    if is_listy(start):
-        return [combine_scheds([pct,1-pct], [SchedCos(s, m), SchedCos(m, e)])
-                for s,m,e in zip(start,middle,end)]
+    #if isinstance(start, Iterable):
+    #    return [combine_scheds([pct,1-pct], [SchedCos(s, m), SchedCos(m, e)])
+    #            for s,m,e in zip(start,middle,end)]
     return combine_scheds([pct,1-pct], [SchedCos(start, middle), SchedCos(middle, end)])
 
 #Cell
@@ -69,14 +64,10 @@ class ParamScheduler(Callback):
     run_after=TrainEvalCallback
 
     def __init__(self, scheds): self.scheds = scheds
-
     def begin_fit(self): self.hps = {p:[] for p in self.scheds.keys()}
 
     def _update_val(self, pct):
-        for pname,fs in self.scheds.items():
-            fs = L(fs)
-            if len(fs)==1: fs = fs*len(self.opt.param_groups)
-            for f,h in zip(fs,self.opt.hypers): h[pname] = f(pct)
+        for n,f in self.scheds.items(): self.opt.set_hyper(n, f(pct))
 
     def begin_batch(self):
         if not self.training: return
@@ -96,13 +87,15 @@ class ParamScheduler(Callback):
 
 #Cell
 @patch
-def fit_one_cycle(self:Learner, n_epoch, lr_max=None, div=25., div_final=1e5, pct_start=0.25,
+def fit_one_cycle(self:Learner, n_epoch, lr_max=None, div=25., div_final=1e5, pct_start=0.25, wd=defaults.wd,
                   moms=(0.95,0.85,0.95), cbs=None, reset_opt=False):
     "Fit `self.model` for `n_epoch` using the 1cycle policy."
-    lr_max = lr_max or self.lr
+    if self.opt is None: self.create_opt()
+    self.opt.set_hyper('lr', self.lr if lr_max is None else lr_max)
+    lr_max = np.array([h['lr'] for h in self.opt.hypers])
     scheds = {'lr': combined_cos(pct_start, lr_max/div, lr_max, lr_max/div_final),
               'mom': combined_cos(pct_start, *moms)}
-    self.fit(n_epoch, cbs=ParamScheduler(scheds)+L(cbs), reset_opt=reset_opt)
+    self.fit(n_epoch, cbs=ParamScheduler(scheds)+L(cbs), reset_opt=reset_opt, wd=wd)
 
 #Cell
 @patch
@@ -117,14 +110,16 @@ def plot_sched(self:Recorder, figsize=None):
 
 #Cell
 @patch
-def fit_sgdr(self:Learner, n_cycles, cycle_len, lr_max=None, cycle_mult=2, cbs=None, reset_opt=False):
+def fit_sgdr(self:Learner, n_cycles, cycle_len, lr_max=None, cycle_mult=2, cbs=None, reset_opt=False, wd=defaults.wd):
     "Fit `self.model` for `n_cycles` of `cycle_len` using SGDR."
-    lr_max = lr_max or self.lr
+    if self.opt is None: self.create_opt()
+    self.opt.set_hyper('lr', self.lr if lr_max is None else lr_max)
+    lr_max = np.array([h['lr'] for h in self.opt.hypers])
     n_epoch = cycle_len * (cycle_mult**n_cycles-1)//(cycle_mult-1)
     pcts = [cycle_len * cycle_mult**i / n_epoch for i in range(n_cycles)]
     scheds = [SchedCos(lr_max, 0) for _ in range(n_cycles)]
     scheds = {'lr': combine_scheds(pcts, scheds)}
-    self.fit(n_epoch, cbs=ParamScheduler(scheds)+L(cbs), reset_opt=reset_opt)
+    self.fit(n_epoch, cbs=ParamScheduler(scheds)+L(cbs), reset_opt=reset_opt, wd=wd)
 
 #Cell
 @docs
@@ -140,6 +135,7 @@ class LRFinder(ParamScheduler):
 
     def begin_fit(self):
         super().begin_fit()
+        self.learn.save('_tmp')
         self.best_loss = float('inf')
 
     def begin_batch(self):
@@ -151,18 +147,21 @@ class LRFinder(ParamScheduler):
         if self.smooth_loss > 4*self.best_loss and self.stop_div: raise CancelFitException()
         if self.train_iter >= self.num_it: raise CancelFitException()
 
-    def begin_validate(self):
-        raise CancelValidException()
+    def begin_validate(self): raise CancelValidException()
 
-    _docs = {"begin_fit": "Initialize container for hyper-parameters",
+    def after_fit(self):
+        self.learn.load('_tmp')
+        os.remove(self.path/self.model_dir/'_tmp.pth')
+
+    _docs = {"begin_fit": "Initialize container for hyper-parameters and save the model",
              "begin_batch": "Set the proper hyper-parameters in the optimizer",
-             "after_batch": "Record hyper-parameters of this batch",
-             "after_fit": "Save the hyper-parameters in the recorder if there is one",
+             "after_batch": "Record hyper-parameters of this batch and potentially stop training",
+             "after_fit": "Save the hyper-parameters in the recorder if there is one and load the original model",
              "begin_validate": "Skip the validation part of training"}
 
 #Cell
 @patch
-def plot_lr_find(self:Recorder, skip_end=0):
+def plot_lr_find(self:Recorder, skip_end=5):
     "Plot the result of an LR Finder test (won't work if you didn't do `learn.lr_find()` before)"
     lrs    = self.lrs    if skip_end==0 else self.lrs   [:-skip_end]
     losses = self.losses if skip_end==0 else self.losses[:-skip_end]
@@ -171,13 +170,12 @@ def plot_lr_find(self:Recorder, skip_end=0):
     ax.set_ylabel("Loss")
     ax.set_xlabel("Learning Rate")
     ax.set_xscale('log')
-    return fig
 
 #Cell
 @patch
-def lr_find(self:Learner, start_lr=1e-7, end_lr=10, num_it=100, stop_div=True):
+def lr_find(self:Learner, start_lr=1e-7, end_lr=10, num_it=100, stop_div=True, show_plot=True):
     "Launch a mock training to find a good learning rate"
-    n_epoch = num_it//len(self.data.train_dl) + 1
+    n_epoch = num_it//len(self.dbunch.train_dl) + 1
     cb=LRFinder(start_lr=start_lr, end_lr=end_lr, num_it=num_it, stop_div=stop_div)
     with self.no_logging(): self.fit(n_epoch, cbs=cb)
-    self.recorder.plot_lr_find()
+    if show_plot: self.recorder.plot_lr_find()
