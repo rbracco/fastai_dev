@@ -102,7 +102,7 @@ def windowed(self:DcmDataset, w, l):
 # From https://radiopaedia.org/articles/windowing-ct
 dicom_windows = types.SimpleNamespace(
     brain=(80,40),
-    subdural=(200,80),
+    subdural=(254,100),
     stroke=(8,32),
     brain_bone=(2800,600),
     brain_soft=(375,40),
@@ -118,7 +118,7 @@ dicom_windows = types.SimpleNamespace(
 class TensorCTScan(TensorImageBW): _show_args = {'cmap':'bone'}
 
 #Cell
-class PILCTScan(PILBase): _open_args,_tensor_cls = {},TensorCTScan
+class PILCTScan(PILBase): _open_args,_tensor_cls,_show_args = {},TensorCTScan,TensorCTScan._show_args
 
 #Cell
 @patch
@@ -216,11 +216,38 @@ def to_uint16(x:(Tensor,DcmDataset), bins=None):
 
 #Cell
 @patch
-def save_png16(x:(Tensor,DcmDataset), path, bins=None, compress_level=0):
-    fn = Path(path).with_suffix('.png')
-    im = Image.fromarray(x.to_uint16(bins))
-    if compress_level: im.save(fn, compress_level=compress_level)
-    else: im.save(fn, compress_type=Image.RLE)
+def to_3chan(x:Tensor, win1, win2, bins=None):
+    return torch.stack([
+        x.windowed(*win1),
+        x.windowed(*win2),
+        x.hist_scaled(bins).clamp(0,1)
+    ])
+
+#Cell
+@patch
+def to_3chan(x:DcmDataset, win1, win2, bins=None):
+    return x.scaled_px.to_3chan(win1, win2, bins)
+
+#Cell
+@patch
+def to_nchan(x:Tensor, wins, bins=None):
+    return torch.stack([
+        *(x.windowed(*win) for win in wins),
+        x.hist_scaled(bins).clamp(0,1)
+    ])
+
+#Cell
+@patch
+def to_nchan(x:DcmDataset, wins, bins=None):
+    return x.scaled_px.to_nchan(wins, bins)
+
+#Cell
+@patch
+def save_jpg(x:(Tensor,DcmDataset), path, wins, bins=None, quality=90):
+    fn = Path(path).with_suffix('.jpg')
+    x = (x.to_nchan(wins, bins)*255).byte()
+    im = Image.fromarray(x.permute(1,2,0).numpy(), mode=['RGB','CMYK'][x.shape[0]==4])
+    im.save(fn, quality=quality)
 
 #Cell
 @patch
