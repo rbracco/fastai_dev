@@ -37,7 +37,7 @@ class TrainEvalCallback(Callback):
         "Update the iter counter (in training mode)"
         if not self.training: return
         self.learn.pct_train += 1./(self.n_iter*self.n_epoch)
-        self.learn.train_iter   += 1
+        self.learn.train_iter += 1
 
     def begin_train(self):
         "Set the model in training mode"
@@ -195,9 +195,9 @@ class Learner():
     def create_opt(self):
         self.opt = self.opt_func(self.splitter(self.model), lr=self.lr)
         if not self.wd_bn_bias:
-            for p in self._bn_bias_state(True ): p['do_wd'] = False
+            for p in self._bn_bias_state(False): p['do_wd'] = False
         if self.train_bn:
-            for p in self._bn_bias_state(False): p['force_train'] = True
+            for p in self._bn_bias_state(True ): p['force_train'] = True
 
     def _split(self, b):
         i = getattr(self.dbunch, 'n_inp', 1 if len(b)==1 else len(b)-1)
@@ -318,7 +318,7 @@ class Learner():
         else: return replacing_yield(self, 'loss_func', partial(self.loss_func, reduction='none'))
 
     def save(self, file, with_opt=True):
-        #TODO: if rank_distrib(): return # don't save if slave proc
+        if rank_distrib(): return # don't save if slave proc
         file = join_path_file(file, self.path/self.model_dir, ext='.pth')
         save_model(file, self.model, getattr(self,'opt',None), with_opt)
 
@@ -380,13 +380,21 @@ class Metric():
         value="The value of the metric")
 
 #Cell
+def _maybe_reduce(val):
+    if num_distrib()>1:
+        val = val.clone()
+        torch.distributed.all_reduce(val, op=torch.distributed.ReduceOp.SUM)
+        val /= num_distrib()
+    return val
+
+#Cell
 class AvgMetric(Metric):
     "Average the values of `func` taking into account potential different batch sizes"
     def __init__(self, func):  self.func = func
     def reset(self):           self.total,self.count = 0.,0
     def accumulate(self, learn):
         bs = find_bs(learn.yb)
-        self.total += to_detach(self.func(learn.pred, *learn.yb))*bs
+        self.total += to_detach(_maybe_reduce(self.func(learn.pred, *learn.yb)))*bs
         self.count += bs
     @property
     def value(self): return self.total/self.count if self.count != 0 else None
@@ -399,7 +407,7 @@ class AvgLoss(Metric):
     def reset(self):           self.total,self.count = 0.,0
     def accumulate(self, learn):
         bs = find_bs(learn.yb)
-        self.total += to_detach(learn.loss.mean())*bs
+        self.total += to_detach(_maybe_reduce(learn.loss.mean()))*bs
         self.count += bs
     @property
     def value(self): return self.total/self.count if self.count != 0 else None
@@ -486,7 +494,7 @@ class Recorder(Callback):
     def plot_loss(self, skip_start=5, with_valid=True):
         plt.plot(self.losses[skip_start:], label='train')
         if with_valid:
-            plt.plot(self.iters, L(self.values).itemgot(0), label='valid')
+            plt.plot(self.iters, L(self.values).itemgot(1), label='valid')
             plt.legend()
 
 #Cell
@@ -522,6 +530,7 @@ add_docs(Learner,
 @patch
 def export(self:Learner, fname='export.pkl'):
     "Export the content of `self` without the items and the optimizer state for inference"
+    if rank_distrib(): return # don't export if slave proc
     old_dbunch = self.dbunch
     self.dbunch = dbunch.new_empty()
     state = self.opt.state_dict()
