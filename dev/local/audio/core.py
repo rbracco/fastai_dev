@@ -38,7 +38,7 @@ def AudioGetter(suf='', recurse=True, folders=None):
     return _inner
 
 #Cell
-URLs.SPEAKERS = 'http://www.openslr.org/resources/45/ST-AEDS-20180100_1-OS'
+URLs.SPEAKERS10 = 'http://www.openslr.org/resources/45/ST-AEDS-20180100_1-OS'
 URLs.SPEAKERS250 = 'https://public-datasets.fra1.digitaloceanspaces.com/250-speakers.tar'
 
 #Cell
