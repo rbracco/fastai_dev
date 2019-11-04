@@ -2,7 +2,7 @@
 
 __all__ = ['Lambda', 'PartialLambda', 'View', 'ResizeBatch', 'Flatten', 'Debugger', 'sigmoid_range', 'SigmoidRange',
            'AdaptiveConcatPool2d', 'PoolType', 'pool_layer', 'PoolFlatten', 'NormType', 'BatchNorm', 'BatchNorm1dFlat',
-           'BnDropLin', 'init_default', 'ConvLayer', 'BaseLoss', 'CrossEntropyLossFlat', 'BCEWithLogitsLossFlat',
+           'LinBnDrop', 'init_default', 'ConvLayer', 'BaseLoss', 'CrossEntropyLossFlat', 'BCEWithLogitsLossFlat',
            'BCELossFlat', 'MSELossFlat', 'LabelSmoothingCrossEntropy', 'trunc_normal_', 'Embedding', 'SelfAttention',
            'PooledSelfAttention2d', 'icnr_init', 'PixelShuffle_ICNR', 'SequentialEx', 'MergeLayer', 'Cat', 'SimpleCNN',
            'ResBlock', 'ParameterModule', 'children_and_parameters', 'TstModule', 'tst', 'children', 'flatten_model',
@@ -113,13 +113,13 @@ class BatchNorm1dFlat(nn.BatchNorm1d):
         return super().forward(x).view(*f,l)
 
 #Cell
-class BnDropLin(nn.Sequential):
+class LinBnDrop(nn.Sequential):
     "Module grouping `BatchNorm1d`, `Dropout` and `Linear` layers"
     def __init__(self, n_in, n_out, bn=True, p=0., act=None):
-        layers = [BatchNorm(n_in, ndim=1)] if bn else []
-        if p != 0: layers.append(nn.Dropout(p))
-        layers.append(nn.Linear(n_in, n_out))
+        layers = [nn.Linear(n_in, n_out, bias=not bn)]
         if act is not None: layers.append(act)
+        if bn: layers.append(BatchNorm(n_out, ndim=1))
+        if p != 0: layers.append(nn.Dropout(p))
         super().__init__(*layers)
 
 #Cell
@@ -143,12 +143,12 @@ defaults.activation=nn.ReLU
 class ConvLayer(nn.Sequential):
     "Create a sequence of convolutional (`ni` to `nf`), ReLU (if `use_activ`) and `norm_type` layers."
     def __init__(self, ni, nf, ks=3, stride=1, padding=None, bias=None, ndim=2, norm_type=NormType.Batch, bn_1st=True,
-                 act_cls=defaults.activation, transpose=False, init=nn.init.kaiming_normal_, xtra=None):
+                 act_cls=defaults.activation, transpose=False, init=nn.init.kaiming_normal_, xtra=None, **kwargs):
         if padding is None: padding = ((ks-1)//2 if not transpose else 0)
         bn = norm_type in (NormType.Batch, NormType.BatchZero)
         if bias is None: bias = not bn
         conv_func = _conv_func(ndim, transpose=transpose)
-        conv = init_default(conv_func(ni, nf, kernel_size=ks, bias=bias, stride=stride, padding=padding), init)
+        conv = init_default(conv_func(ni, nf, kernel_size=ks, bias=bias, stride=stride, padding=padding, **kwargs), init)
         if   norm_type==NormType.Weight:   conv = weight_norm(conv)
         elif norm_type==NormType.Spectral: conv = spectral_norm(conv)
         layers = [conv]
