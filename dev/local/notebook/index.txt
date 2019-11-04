@@ -659,7 +659,7 @@
   "audio_extensions": "70_audio_core.ipynb",
   "get_audio_files": "70_audio_core.ipynb",
   "AudioGetter": "70_audio_core.ipynb",
-  "URLs.SPEAKERS": "70_audio_core.ipynb",
+  "URLs.SPEAKERS10": "70_audio_core.ipynb",
   "URLs.SPEAKERS250": "70_audio_core.ipynb",
   "AudioItem": "70_audio_core.ipynb",
   "show_audio_signal": "70_audio_core.ipynb",
