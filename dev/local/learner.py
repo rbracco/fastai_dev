@@ -68,7 +68,10 @@ class GatherPredsCallback(Callback):
         "Save predictions, targets and potentially losses"
         self.preds.append(to_detach(self.pred))
         self.targets.append(to_detach(self.yb))
-        if self.with_loss:  self.losses.append(to_detach(self.loss))
+        if self.with_loss:
+            bs = find_bs(self.yb)
+            loss = self.loss if self.loss.numel() == bs else self.loss.view(bs,-1).mean(1)
+            self.losses.append(to_detach(loss))
 
 #Cell
 _ex_docs = dict(
@@ -141,7 +144,7 @@ def _try_concat(o):
 
 #Cell
 class Learner():
-    def __init__(self, dbunch, model, loss_func=None, opt_func=SGD, lr=defaults.lr, splitter=trainable_params, cbs=None,
+    def __init__(self, dbunch, model, loss_func=None, opt_func=Adam, lr=defaults.lr, splitter=trainable_params, cbs=None,
                  cb_funcs=None, metrics=None, path=None, model_dir='models', wd_bn_bias=False, train_bn=True):
         store_attr(self, "dbunch,model,opt_func,lr,splitter,model_dir,wd_bn_bias,train_bn,metrics")
         self.training,self.logger,self.opt,self.cbs = False,print,None,L()
@@ -514,3 +517,19 @@ add_docs(Learner,
          freeze_to="Freeze parameter groups up to `n`",
          freeze="Freeze up to last parameter group",
          unfreeze="Unfreeze the entire model")
+
+#Cell
+@patch
+def export(self:Learner, fname='export.pkl'):
+    "Export the content of `self` without the items and the optimizer state for inference"
+    old_dbunch = self.dbunch
+    self.dbunch = dbunch.new_empty()
+    state = self.opt.state_dict()
+    self.opt = None
+    with warnings.catch_warnings():
+        #To avoid the warning that come from PyTorch about model not being checked
+        warnings.simplefilter("ignore")
+        torch.save(self, open(self.path/fname, 'wb'))
+    self.create_opt()
+    self.opt.load_state_dict(state)
+    self.dbunch = old_dbunch
