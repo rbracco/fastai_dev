@@ -110,6 +110,17 @@ def plot_sched(self:Recorder, figsize=None):
 
 #Cell
 @patch
+def fit_flat_cos(self:Learner, n_epoch, lr=None, div_final=1e5, pct_start=0.75, wd=defaults.wd,
+                 cbs=None, reset_opt=False):
+    "Fit `self.model` for `n_epoch` at flat `lr` before a cosine annealing."
+    if self.opt is None: self.create_opt()
+    self.opt.set_hyper('lr', self.lr if lr is None else lr)
+    lr = np.array([h['lr'] for h in self.opt.hypers])
+    scheds = {'lr': combined_cos(pct_start, lr, lr, lr/div_final)}
+    self.fit(n_epoch, cbs=ParamScheduler(scheds)+L(cbs), reset_opt=reset_opt, wd=wd)
+
+#Cell
+@patch
 def fit_sgdr(self:Learner, n_cycles, cycle_len, lr_max=None, cycle_mult=2, cbs=None, reset_opt=False, wd=defaults.wd):
     "Fit `self.model` for `n_cycles` of `cycle_len` using SGDR."
     if self.opt is None: self.create_opt()
@@ -150,8 +161,10 @@ class LRFinder(ParamScheduler):
     def begin_validate(self): raise CancelValidException()
 
     def after_fit(self):
-        self.learn.load('_tmp')
-        os.remove(self.path/self.model_dir/'_tmp.pth')
+        tmp_f = self.path/self.model_dir/'_tmp.pth'
+        if tmp_f.exists():
+            self.learn.load('_tmp')
+            os.remove(tmp_f)
 
     _docs = {"begin_fit": "Initialize container for hyper-parameters and save the model",
              "begin_batch": "Set the proper hyper-parameters in the optimizer",

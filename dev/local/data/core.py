@@ -144,14 +144,16 @@ class FilteredBase:
     def databunch(self, bs=16, val_bs=None, shuffle_train=True, n=None, path='.', dl_type=None, dl_kwargs=None, **kwargs):
         if dl_kwargs is None: dl_kwargs = [{}] * self.n_subsets
         ns = self.n_subsets-1
-        bss = [bs] + [3*bs//2]*ns if val_bs is None else [bs] + [val_bs]*ns
+        bss = ([None]*(ns+1) if bs is None
+               else [bs] + [3*bs//2]*ns if val_bs is None
+               else [bs] + [val_bs]*ns)
         shuffles = [shuffle_train] + [False]*ns
         if dl_type is None: dl_type = self._dl_type
         dls = [dl_type(self.subset(i), bs=b, shuffle=s, drop_last=s, n=n if i==0 else None, **kwargs, **dk)
                for i,(b,s,dk) in enumerate(zip(bss,shuffles,dl_kwargs))]
         return DataBunch(*dls, path=path)
 
-FilteredBase.train,FilteredBase.valid = add_props(lambda i,x: x.subset(i), 2)
+FilteredBase.train,FilteredBase.valid = add_props(lambda i,x: x.subset(i))
 
 #Cell
 class TfmdList(FilteredBase, L, GetAttr):
@@ -171,8 +173,8 @@ class TfmdList(FilteredBase, L, GetAttr):
     def __repr__(self): return f"{self.__class__.__name__}: {self.items}\ntfms - {self.tfms.fs}"
     def __iter__(self): return (self[i] for i in range(len(self)))
     def show(self, o, **kwargs): return self.tfms.show(o, **kwargs)
-    def decode(self, x, **kwargs): return self.tfms.decode(x, **kwargs)
-    def __call__(self, x, **kwargs): return self.tfms.__call__(x, **kwargs)
+    def decode(self, o, **kwargs): return self.tfms.decode(o, **kwargs)
+    def __call__(self, o, **kwargs): return self.tfms.__call__(o, **kwargs)
     def setup(self, train_setup=True): self.tfms.setup(getattr(self,'train',self) if train_setup else self)
     def overlapping_splits(self): return L(Counter(self.splits.concat()).values()).filter(gt(1))
 
@@ -229,8 +231,15 @@ class DataSource(FilteredBase):
         return ctx
 
     def new_empty(self):
-        tls = [tl._new([], split_idx=tl.split_idx) for tl in self.tls]
+        tls = [tl._new([self.items[0]], split_idx=tl.split_idx) for tl in self.tls]
         return type(self)(tls=tls, n_inp=self.n_inp)
+
+    @contextmanager
+    def set_split_idx(self, i):
+        old_split_idx = self.split_idx
+        for tl in self.tls: tl.tfms.split_idx = i
+        yield self
+        for tl in self.tls: tl.tfms.split_idx = old_split_idx
 
     _docs=dict(
         decode="Compose `decode` of all `tuple_tfms` then all `tfms` on `i`",
@@ -238,7 +247,9 @@ class DataSource(FilteredBase):
         databunch="Get a `DataBunch`",
         overlapping_splits="All splits that are in more than one split",
         subset="New `DataSource` that only includes subset `i`",
-        new_empty="Create a new empty version of the `self`, keeping only the transforms")
+        new_empty="Create a new empty version of the `self`, keeping only the transforms",
+        set_split_idx="Contextmanager to use the same `DataSource` with another `split_idx`"
+    )
 
 #Cell
 def test_set(dsrc, test_items, rm_tfms=0):

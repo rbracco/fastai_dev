@@ -38,6 +38,7 @@ class TrackerCallback(Callback):
 
     def begin_fit(self):
         "Prepare the monitored value"
+        self.run = not hasattr(self, "lr_finder") and not hasattr(self, "gather_preds")
         self.best = float('inf') if self.comp == np.less else -float('inf')
         assert self.monitor in self.recorder.metric_names[1:]
         self.idx = list(self.recorder.metric_names[1:]).index(self.monitor)
@@ -47,6 +48,8 @@ class TrackerCallback(Callback):
         val = self.recorder.values[-1][self.idx]
         if self.comp(val - self.min_delta, self.best): self.best,self.new_best = val,True
         else: self.new_best = False
+
+    def after_fit(self): self.run=True
 
 #Cell
 class EarlyStoppingCallback(TrackerCallback):
@@ -87,8 +90,7 @@ class SaveModelCallback(TrackerCallback):
 
     def on_train_end(self, **kwargs):
         "Load the best model."
-        if not self.every_epoch and (self.learn.path/f'{self.learn.model_dir}/{self.fname}.pth').is_file():
-            self.learn.load(f'{self.fname}')
+        if not self.every_epoch: self.learn.load(f'{self.fname}')
 
 #Cell
 class ReduceLROnPlateau(TrackerCallback):

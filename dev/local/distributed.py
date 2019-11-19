@@ -79,7 +79,7 @@ class DistributedDL(TfmdDL):
     def from_dl(cls, dl, rank, world_size, **kwargs):
         cur_kwargs = dict(num_workers=dl.fake_l.num_workers, pin_memory=dl.pin_memory, timeout=dl.timeout,
                           bs=dl.bs, shuffle=dl.shuffle, drop_last=dl.drop_last, indexed=dl.indexed)
-        cur_kwargs.update({n: getattr(dl, n) for n in cls._methods if n not in "sample shuffle_fn create_item".split()})
+        cur_kwargs.update({n: getattr(dl, n) for n in cls._methods if n not in "get_idxs sample shuffle_fn create_item".split()})
         return cls(dl.dataset, rank, world_size, **merge(cur_kwargs, kwargs))
 
 #Cell
@@ -90,11 +90,17 @@ class DistributedTrainer(Callback):
     def begin_fit(self):
         self.learn.model = DistributedDataParallel(self.model, device_ids=[self.cuda_id], output_device=self.cuda_id)
         self.old_dls = [dl for dl in self.dbunch.dls]
-        self.learn.dbunch.dls = [DistributedDL.from_dl(dl, rank_distrib(), num_distrib()) for dl in self.dbunch.dls]
+        self.learn.dbunch.dls = [self._wrap_dl(dl) for dl in self.dbunch.dls]
         if rank_distrib() > 0: self.learn.logger=noop
+
+    def _wrap_dl(self, dl):
+        return dl if isinstance(dl, DistributedDL) else DistributedDL.from_dl(dl, rank_distrib(), num_distrib())
 
     def begin_epoch(self):
         for dl in self.dbunch.dls: dl.set_epoch(self.epoch)
+
+    def begin_train(self):    self.dl = self._wrap_dl(self.dl)
+    def begin_validate(self): self.dl = self._wrap_dl(self.dl)
 
     def after_fit(self):
         self.learn.model = self.learn.model.module
